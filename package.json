@@ -1,8 +1,8 @@
 {
-  "name": "vendure-plugin-import-products",
+  "name": "vendure-import-products-plugin",
   "version": "2.3.0",
-  "repository": "git@github.com:dalyathan/vendure-plugin-import-products.git",
-  "author": "Surafel Melese Tariku",
+  "repository": "https://github.com/thecooolemail/vendure-import-products-plugin.git",
+  "author": "thecoolemail",
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
