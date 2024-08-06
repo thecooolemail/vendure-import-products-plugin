@@ -16,7 +16,8 @@
             "sku": string,
             "Collection": string,
             "parentfacet": string,
-            "childfacet": string
+            "childfacet": string,
+            "brand": string
         },
     ]
   }
@@ -27,7 +28,7 @@
 1. Run
 
 ```bash
-  npm i @nestjs/axios @nestjs/schedule axios ts-node
+  npm i @nestjs/axios @nestjs/schedule axios ts-node vendure-brands-plugin
 ```
 
 2. And then add this to your `vendure-config.ts`.
