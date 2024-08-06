@@ -7,7 +7,11 @@ import { Channel, ConfigService, RequestContext, TransactionalConnection, User }
  *
  * @docsCategory testing
  */
-export async function getSuperadminContext(defaultChannel: Channel, connection: TransactionalConnection, configService: ConfigService): Promise<RequestContext> {
+export async function getSuperadminContext(
+    defaultChannel: Channel,
+    connection: TransactionalConnection,
+    configService: ConfigService,
+): Promise<RequestContext> {
     const { superadminCredentials } = configService.authOptions;
     const superAdminUser = await connection
         .getRepository(User)

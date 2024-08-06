@@ -8,20 +8,20 @@ import { CustomProductFields } from '@vendure/core/dist/entity/custom-entity-fie
 declare module '@vendure/core/dist/entity/custom-entity-fields' {
     interface CustomProductFields {
         webhookId: string;
-        unit: string
-        Measurement: string
+        unit: string;
+        Measurement: string;
     }
 }
 
-export type RemoteProduct={
-    name: string
-    id: string
-    price: string
-    group: string
-    sku: string
-    Collection: string
-    parentfacet: string
-    childfacet: string
-    unit: string
-    measurement: string
-}
+export type RemoteProduct = {
+    name: string;
+    id: string;
+    price: string;
+    group: string;
+    sku: string;
+    Collection: string;
+    parentfacet: string;
+    childfacet: string;
+    unit: string;
+    measurement: string;
+};
