@@ -86,6 +86,17 @@ require('dotenv').config();
             shopApiPlayground: true,
             adminApiPlayground: true,
         },
+        authOptions: {
+            tokenMethod: ['bearer', 'cookie'],
+            superadminCredentials: {
+                identifier: process.env.SUPERADMIN_USERNAME,
+                password: process.env.SUPERADMIN_PASSWORD,
+            },
+            requireVerification: true,
+            cookieOptions: {
+                secret: process.env.COOKIE_SECRET,
+            },
+        },
         entityOptions: {
             entityIdStrategy: new AutoIncrementIdStrategy(),
         },
