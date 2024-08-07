@@ -1,5 +1,7 @@
+import './types';
+
 import { HttpService } from '@nestjs/axios';
-import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
+import { Injectable, OnApplicationBootstrap, Inject } from '@nestjs/common';
 import {
     Channel,
     ChannelService,
@@ -7,6 +9,7 @@ import {
     CollectionService,
     ConfigArgService,
     ConfigService,
+    EntityHydrator,
     EventBus,
     Facet,
     FacetService,
@@ -17,6 +20,7 @@ import {
     JobQueueService,
     LanguageCode,
     Logger,
+    patchEntity,
     ProcessContext,
     Product,
     ProductService,
@@ -51,15 +55,20 @@ import {
 import { CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 import { CronJob } from 'cron';
 import { PLUGIN_INIT_OPTIONS } from './constants';
-import { ProductImportPluginOptions } from './plugin';
+import { ProductImportPluginOptions } from './product-import.plugin';
+import { firstValueFrom, catchError } from 'rxjs';
+import { AxiosError } from 'axios';
+
+import { Brand, Priority, BrandService } from 'vendure-brands-plugin';
 
 export const NEW_VARIANT_STOCK_VALUE = 9999;
 
 @Injectable()
-export class ProductImportService implements OnModuleInit {
+export class ProductImportService implements OnApplicationBootstrap {
     private jobQueue!: JobQueue;
 
     constructor(
+        private hydrator: EntityHydrator,
         private httpService: HttpService,
         private channelService: ChannelService,
         private productVariantService: ProductVariantService,
@@ -78,11 +87,12 @@ export class ProductImportService implements OnModuleInit {
         private schedulerRegistry: SchedulerRegistry,
         private jobQueueService: JobQueueService,
         private stockMovementService: StockMovementService,
+        private brandService: BrandService,
         @Inject(PLUGIN_INIT_OPTIONS) private readonly options: ProductImportPluginOptions,
         private configService: ConfigService,
     ) {}
 
-    async onModuleInit() {
+    async onApplicationBootstrap() {
         this.jobQueue = await this.jobQueueService.createQueue({
             name: 'import-products',
             process: async job => {
@@ -110,9 +120,20 @@ export class ProductImportService implements OnModuleInit {
         if (this.options?.url === undefined) {
             throw new UserInputError(`You need to configure "ProductImportPluginOptions.url"`);
         }
-        const response = await this.httpService.get(this.options.url).toPromise();
-        const products = response?.data.Items as RemoteProduct[];
+
+        const { data } = await firstValueFrom(
+            this.httpService.get<{ Items: RemoteProduct[] }>(this.options.url).pipe(
+                catchError((error: AxiosError) => {
+                    Logger.error(error.message);
+                    throw new Error(`Error fetching products from ${this.options.url}`);
+                }),
+            ),
+        );
+
+        const products = data.Items;
+
         Logger.info(`Started importing ${products.length} Products`);
+
         const webHookIds = products.map(p => p.id);
         const defaultChannel = await this.channelService.getDefaultChannel();
         const ctx = await getSuperadminContext(defaultChannel, this.connection, this.configService);
@@ -122,8 +143,8 @@ export class ProductImportService implements OnModuleInit {
 
         //for those which exist we go thru each and update each
         const productRepo = this.connection.getRepository(ctx, Product);
-
         const newRemoteProducts: RemoteProduct[] = [];
+
         for (let remoteProduct of products) {
             const vendureProduct = vendureProducts.find(vP => vP.customFields.webhookId === remoteProduct.id);
             if (vendureProduct) {
@@ -157,7 +178,6 @@ export class ProductImportService implements OnModuleInit {
                 newRemoteProducts.push(remoteProduct);
             }
         }
-
         await productRepo.save(vendureProducts);
         //for those which dont we create a new Product
         for (let newProduct of newRemoteProducts) {
@@ -193,6 +213,7 @@ export class ProductImportService implements OnModuleInit {
             .addSelect('product.customFields.webhookId')
             .addSelect('product.customFields.unit')
             .addSelect('product.customFields.Measurement')
+            .addSelect('product.customFields.brand')
             .addSelect('productVariantPrices.id')
             .addSelect('productVariantPrices.price')
             .addSelect('productVariantPrices.channelId')
@@ -233,16 +254,30 @@ export class ProductImportService implements OnModuleInit {
             .getMany();
     }
 
+    async getOrCreateBrand(ctx: RequestContext, brandName: string): Promise<Brand> {
+        let brand;
+
+        brand = await this.brandService.findOneByName(ctx, brandName);
+        if (!brand) {
+            brand = await this.brandService.create(ctx, { name: brandName, priority: Priority.LOW });
+        }
+
+        return brand;
+    }
+
     async updateProduct(
         ctx: RequestContext,
         vendureProduct: Product,
         languageCode: LanguageCode,
         remoteProduct: RemoteProduct,
     ) {
+        await this.hydrator.hydrate(ctx, vendureProduct, { relations: ['customFields.brand'] });
         let translation = vendureProduct.translations.find(tr => languageCode === tr.languageCode);
         const productTranslationRepo = this.connection.getRepository(ctx, ProductTranslation);
+
         vendureProduct.customFields.unit = remoteProduct.unit;
         vendureProduct.customFields.Measurement = remoteProduct.measurement;
+
         if (translation) {
             const randomString = Math.random().toString(36).substring(2, 6);
             translation.name = remoteProduct.name;
@@ -257,6 +292,27 @@ export class ProductImportService implements OnModuleInit {
             vendureProduct.translations.push(translation);
         }
         await productTranslationRepo.save(translation);
+        if (remoteProduct.brand) {
+            const brand = await this.getOrCreateBrand(ctx, remoteProduct.brand);
+
+            await this.connection.getRepository(ctx, Product).save(
+                patchEntity(vendureProduct, {
+                    customFields: {
+                        ...vendureProduct.customFields,
+                        brand: brand,
+                    },
+                }),
+            );
+        } else {
+            await this.connection.getRepository(ctx, Product).save(
+                patchEntity(vendureProduct, {
+                    customFields: {
+                        ...vendureProduct.customFields,
+                        brand: null,
+                    },
+                }),
+            );
+        }
     }
 
     async updateProductVariantName(
@@ -306,6 +362,18 @@ export class ProductImportService implements OnModuleInit {
                 await this.channelService.assignToCurrentChannel(p, ctx);
             },
         });
+
+        if (newProduct.brand) {
+            const brand = await this.getOrCreateBrand(ctx, newProduct.brand);
+            await this.connection.getRepository(ctx, Product).save(
+                patchEntity(product, {
+                    customFields: {
+                        ...product.customFields,
+                        brand: brand,
+                    },
+                }),
+            );
+        }
         await this.createProductVariant(ctx, product.id, newProduct, languageCode);
         return this.productService.findOne(ctx, product.id, [
             'featuredAsset',

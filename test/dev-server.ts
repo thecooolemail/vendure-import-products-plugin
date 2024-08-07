@@ -1,4 +1,9 @@
-import { createTestEnvironment, registerInitializer, SqljsInitializer, testConfig } from '@vendure/testing';
+import {
+    createTestEnvironment,
+    PostgresInitializer,
+    registerInitializer,
+    testConfig,
+} from '@vendure/testing';
 import {
     DefaultLogger,
     DefaultSearchPlugin,
@@ -16,12 +21,13 @@ import { initialData } from '../test/initial-data';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { defaultEmailHandlers, EmailPlugin } from '@vendure/email-plugin';
 import { testPaymentMethodHandler } from './test-payment-method';
-import { ProductImportPlugin } from '../dist/plugin';
+import { ProductImportPlugin } from '../src/product-import.plugin';
+import { BrandPlugin } from 'vendure-brands-plugin';
 
 require('dotenv').config();
 
 (async () => {
-    registerInitializer('sqljs', new SqljsInitializer('__data__'));
+    registerInitializer('postgres', new PostgresInitializer());
     const devConfig = mergeConfig(testConfig, {
         logger: new DefaultLogger({ level: LogLevel.Debug }),
         plugins: [
@@ -56,15 +62,26 @@ require('dotenv').config();
 
                 app: compileUiExtensions({
                     outputPath: path.join(__dirname, '__admin-ui'),
-                    extensions: [],
+                    extensions: [BrandPlugin.ui],
                     devMode: true,
                 }),
             }),
+            BrandPlugin,
             ProductImportPlugin.init({
-                url: `https://tfcmayasoftdata.up.railway.app/allproducts`,
+                // url: `https://tfcmayasoftdata.up.railway.app/allproducts`,
+                url: `http://localhost:3001/allProducts`,
                 everyThisDay: 3,
             }),
         ],
+        dbConnectionOptions: {
+            type: 'postgres',
+            database: process.env.DB_NAME,
+            host: process.env.DB_HOST,
+            port: process.env.DB_PORT ? +process.env.DB_PORT : 5432,
+            username: process.env.DB_USERNAME,
+            password: process.env.DB_PASSWORD,
+            schema: process.env.DB_SCHEMA,
+        },
         apiOptions: {
             shopApiPlayground: true,
             adminApiPlayground: true,

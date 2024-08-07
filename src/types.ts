@@ -24,4 +24,5 @@ export type RemoteProduct = {
     childfacet: string;
     unit: string;
     measurement: string;
+    brand?: string;
 };

@@ -1,6 +1,9 @@
-import { LanguageCode, PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
 import { HttpModule } from '@nestjs/axios';
 import { ScheduleModule } from '@nestjs/schedule';
+
+import { LanguageCode, PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
+import { BrandPlugin } from 'vendure-brands-plugin';
+
 import { ProductImportService } from './product-import.service';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 
@@ -10,7 +13,8 @@ export interface ProductImportPluginOptions {
 }
 
 @VendurePlugin({
-    imports: [PluginCommonModule, ScheduleModule.forRoot(), HttpModule],
+    compatibility: '^3.0.0',
+    imports: [PluginCommonModule, ScheduleModule.forRoot(), HttpModule, BrandPlugin],
     providers: [
         ProductImportService,
         {
@@ -55,6 +59,7 @@ export interface ProductImportPluginOptions {
                 },
             ],
         });
+
         return config;
     },
 })
