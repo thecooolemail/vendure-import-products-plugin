@@ -68,8 +68,7 @@ require('dotenv').config();
             }),
             BrandPlugin,
             ProductImportPlugin.init({
-                // url: `https://tfcmayasoftdata.up.railway.app/allproducts`,
-                url: `http://localhost:3001/allProducts`,
+                url: `https://tfcmayasoftdata.up.railway.app/allproducts`,
                 everyThisDay: 3,
             }),
         ],
