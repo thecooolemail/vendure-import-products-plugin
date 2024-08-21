@@ -60,14 +60,9 @@ import { firstValueFrom, catchError } from 'rxjs';
 import { AxiosError } from 'axios';
 
 import { Brand, BrandService } from 'vendure-brands-plugin';
+import { Priority } from 'vendure-brands-plugin/dist/gql/generated';
 
 export const NEW_VARIANT_STOCK_VALUE = 9999;
-
-enum Priority {
-    LOW = 'LOW',
-    MEDIUM = 'MEDIUM',
-    HIGH = 'HIGH',
-}
 
 @Injectable()
 export class ProductImportService implements OnApplicationBootstrap {
