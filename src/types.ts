@@ -10,6 +10,7 @@ declare module '@vendure/core/dist/entity/custom-entity-fields' {
         webhookId: string;
         unit: string;
         Measurement: string;
+        brandName?: string | null;
     }
 }
 

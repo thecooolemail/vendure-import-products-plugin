@@ -6,7 +6,6 @@ import {
 } from '@vendure/testing';
 import {
     DefaultLogger,
-    DefaultSearchPlugin,
     LogLevel,
     mergeConfig,
     JobQueueService,
@@ -36,7 +35,6 @@ require('dotenv').config();
                 assetUploadDir: path.join(__dirname, '../static/assets'),
             }),
             DefaultJobQueuePlugin.init({ useDatabaseForBuffer: true }),
-            DefaultSearchPlugin.init({ bufferUpdates: false, indexStockStatus: true }),
             EmailPlugin.init({
                 devMode: true,
                 outputPath: path.join(__dirname, '../static/email/test-emails'),
@@ -59,7 +57,6 @@ require('dotenv').config();
                     hideVendureBranding: true,
                     hideVersion: true,
                 },
-
                 app: compileUiExtensions({
                     outputPath: path.join(__dirname, '__admin-ui'),
                     extensions: [BrandPlugin.ui],

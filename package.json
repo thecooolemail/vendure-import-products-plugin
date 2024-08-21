@@ -52,8 +52,8 @@
     },
     "dependencies": {
         "prettier": "^3.3.3",
-        "sharp": "^0.33.4",
-        "vendure-brands-plugin": "^1.0.6"
+        "sharp": "^0.33.5",
+        "vendure-brands-plugin": "^1.1.1"
     },
     "packageManager": "yarn@1.22.21+sha1.1959a18351b811cdeedbd484a8f86c3cc3bbaf72"
 }
