@@ -1,6 +1,6 @@
 {
     "name": "vendure-import-products-plugin",
-    "version": "3.0.1",
+    "version": "3.0.2",
     "repository": "https://github.com/thecooolemail/vendure-import-products-plugin.git",
     "author": "thecoolemail",
     "license": "MIT",
